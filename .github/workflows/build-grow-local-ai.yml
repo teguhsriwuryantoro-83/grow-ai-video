@@ -2,6 +2,10 @@ name: Build GROW Local AI APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-grow-local-ai.yml'
 
 permissions:
   contents: read
