@@ -1,0 +1,57 @@
+name: Build GROW Local AI APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Android Stable Diffusion app
+        uses: actions/checkout@v4
+        with:
+          repository: akleine/sdcpp-on-android
+          path: grow-local-ai-src
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Brand as GROW Local AI
+        shell: bash
+        run: |
+          cd grow-local-ai-src
+          if [ -f app/src/main/res/values/strings.xml ]; then
+            sed -i 's/>sdcpp-on-android</>GROW Local AI</g; s/>SDCPP on Android</>GROW Local AI</g' app/src/main/res/values/strings.xml || true
+          fi
+          chmod +x gradlew
+
+      - name: Build APK
+        working-directory: grow-local-ai-src
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          mkdir -p out
+          APK=$(find grow-local-ai-src/app/build/outputs/apk/debug -name '*.apk' | head -n 1)
+          test -n "$APK"
+          cp "$APK" out/GROW-Local-AI-debug.apk
+          sha256sum out/GROW-Local-AI-debug.apk > out/GROW-Local-AI-debug.apk.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GROW-Local-AI-Android
+          path: out/*
+          if-no-files-found: error
+          retention-days: 30
